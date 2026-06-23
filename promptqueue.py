@@ -155,8 +155,8 @@ def tkinter_copy_clipboard(text: str) -> None:
     root.destroy()
 
 
-def copy_clipboard(text: str, runner=subprocess.run, fallback=tkinter_copy_clipboard) -> None:
-    if platform.system() == "Windows":
+def copy_clipboard(text: str, runner=subprocess.run, fallback=tkinter_copy_clipboard, system=platform.system) -> None:
+    if system() == "Windows":
         try:
             runner(["clip"], input=text, text=True, check=True, capture_output=True)
             return
@@ -556,11 +556,15 @@ def selftest() -> None:
                 subprocess.CalledProcessError(1, ["clip"], stderr="denied")
             ),
             fallback=lambda _text: (_ for _ in ()).throw(AssertionError("no Windows fallback")),
+            system=lambda: "Windows",
         )
     except RuntimeError as exc:
         assert "clipboard unavailable" in str(exc)
     else:
         raise AssertionError("failed Windows clipboard writes should not be marked sent")
+    fallback_seen = []
+    copy_clipboard("hi", fallback=fallback_seen.append, system=lambda: "Linux")
+    assert fallback_seen == ["hi"]
 
     with tempfile.TemporaryDirectory() as temp_dir:
         path = Path(temp_dir) / "queue.json"

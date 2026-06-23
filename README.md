@@ -1,5 +1,9 @@
 # PromptQueue
 
+[![CI](https://github.com/AtharvaMaik/PromptQueue/actions/workflows/ci.yml/badge.svg)](https://github.com/AtharvaMaik/PromptQueue/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+
 Schedule AI prompts for the moment your limits reset.
 
 PromptQueue is a tiny, dependency-free prompt scheduler for Claude, Codex, ChatGPT, Gemini, Copilot, Cursor, Antigravity, and anything else you can launch from your machine.
@@ -12,6 +16,8 @@ python promptqueue.py run
 ```
 
 One Python file. Standard library only. No accounts, no server, no private APIs.
+
+![PromptQueue terminal demo](docs/demo.svg)
 
 ## Why This Exists
 
@@ -278,8 +284,12 @@ For GUI apps, it does not use private app APIs. If one app misses the composer, 
 
 ## Contributing
 
-Issues and PRs are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
+Issues and PRs are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 The best contributions are small and practical: a better target alias, a failing selftest for a real bug, clearer setup docs, or a platform-specific paste improvement.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
 
 Star the repo if it saves you from waiting around for an AI limit reset. That is the whole point.

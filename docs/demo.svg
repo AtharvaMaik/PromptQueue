@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="360" viewBox="0 0 920 360" role="img" aria-labelledby="title desc">
+  <title id="title">PromptQueue terminal demo</title>
+  <desc id="desc">A terminal demo showing a prompt queued for 7:30 PM and sent to Claude.</desc>
+  <rect width="920" height="360" rx="14" fill="#101317"/>
+  <rect x="0" y="0" width="920" height="42" rx="14" fill="#1b2027"/>
+  <circle cx="24" cy="21" r="6" fill="#ff5f57"/>
+  <circle cx="44" cy="21" r="6" fill="#ffbd2e"/>
+  <circle cx="64" cy="21" r="6" fill="#28c840"/>
+  <text x="88" y="27" fill="#c9d1d9" font-family="Consolas, Menlo, monospace" font-size="14">PromptQueue</text>
+
+  <text x="34" y="84" fill="#8b949e" font-family="Consolas, Menlo, monospace" font-size="18">$</text>
+  <text x="58" y="84" fill="#f0f6fc" font-family="Consolas, Menlo, monospace" font-size="18">python promptqueue.py add 19:30 claude continue the refactor</text>
+  <text x="34" y="122" fill="#3fb950" font-family="Consolas, Menlo, monospace" font-size="18">queued 7c2a91f0 for 2026-06-23T19:30:00 -&gt; claude</text>
+
+  <text x="34" y="172" fill="#8b949e" font-family="Consolas, Menlo, monospace" font-size="18">$</text>
+  <text x="58" y="172" fill="#f0f6fc" font-family="Consolas, Menlo, monospace" font-size="18">python promptqueue.py run</text>
+  <text x="34" y="210" fill="#79c0ff" font-family="Consolas, Menlo, monospace" font-size="18">promptqueue running; queue file: ~/.promptqueue.json</text>
+
+  <text x="34" y="260" fill="#8b949e" font-family="Consolas, Menlo, monospace" font-size="18">19:30</text>
+  <text x="102" y="260" fill="#f0f6fc" font-family="Consolas, Menlo, monospace" font-size="18">opens Claude, pastes the prompt, presses Enter</text>
+  <text x="34" y="300" fill="#3fb950" font-family="Consolas, Menlo, monospace" font-size="18">sent 7c2a91f0 -&gt; claude</text>
+</svg>

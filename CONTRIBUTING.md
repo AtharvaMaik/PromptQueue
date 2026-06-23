@@ -57,4 +57,4 @@ python promptqueue.py windows
 
 ## License
 
-The repository owner should add a `LICENSE` file before accepting substantial outside code contributions.
+By contributing, you agree that your contribution will be licensed under the MIT license.
