@@ -178,25 +178,25 @@ def protected_windowsapps_path(path: str, system=platform.system) -> bool:
     return system() == "Windows" and "\\program files\\windowsapps\\" in normalized
 
 
-def command_issue(args: list[str], which=shutil.which) -> str | None:
+def command_issue(args: list[str], which=shutil.which, system=platform.system) -> str | None:
     if not args:
         return "command required"
     path = which(args[0])
     if not path:
         return f"command not found: {args[0]}"
-    if protected_windowsapps_path(path):
+    if protected_windowsapps_path(path, system):
         return f"command not runnable: {args[0]} (protected WindowsApps package)"
     return None
 
 
-def launch_status(launch: str, which=shutil.which) -> str:
+def launch_status(launch: str, which=shutil.which, system=platform.system) -> str:
     if launch in {"copy", "clipboard", "none"}:
         return "internal"
     if launch.startswith(("http://", "https://")):
         return "url"
     if launch.startswith("app:"):
         return "app"
-    issue = command_issue(split_command(launch.replace("{prompt}", "prompt")), which)
+    issue = command_issue(split_command(launch.replace("{prompt}", "prompt")), which, system)
     if issue and "not runnable" in issue:
         return "blocked"
     return "missing" if issue else "found"
@@ -534,10 +534,10 @@ def selftest() -> None:
     assert command_issue(["tool"], which=lambda name: f"C:/bin/{name}") is None
     protected_path = "C:/Program Files/WindowsApps/Vendor.App_1.0.0_x64__abc/app/resources/tool.exe"
     assert protected_windowsapps_path(protected_path, system=lambda: "Windows")
-    assert command_issue(["tool"], which=lambda _name: protected_path) == (
+    assert command_issue(["tool"], which=lambda _name: protected_path, system=lambda: "Windows") == (
         "command not runnable: tool (protected WindowsApps package)"
     )
-    assert launch_status("tool --flag", which=lambda _name: protected_path) == "blocked"
+    assert launch_status("tool --flag", which=lambda _name: protected_path, system=lambda: "Windows") == "blocked"
     try:
         run_command_template(
             "tool {prompt}",
