@@ -16,6 +16,8 @@ promptqueue add 19:30 claude finish the migration plan
 promptqueue run
 ```
 
+Install it from PyPI with `pip install promptqueue`.
+
 One Python file. Standard library only. No accounts, no server, no private APIs.
 
 ![PromptQueue terminal demo](https://raw.githubusercontent.com/AtharvaMaik/PromptQueue/main/docs/demo.svg)
