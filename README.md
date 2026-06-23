@@ -54,6 +54,7 @@ claude       launch=https://claude.ai/new        window=Claude       click=botto
 claude-code  launch=claude -p {prompt}
 codex        launch=codex app                    window=Codex        click=bottom
 codex-exec   launch=codex exec {prompt}
+copilot      launch=https://copilot.microsoft.com/ window=Copilot    click=bottom
 copy         launch=copy
 cursor       launch=cursor                       window=Cursor       click=bottom
 gemini       launch=https://gemini.google.com/app window=Gemini      click=bottom
@@ -62,6 +63,18 @@ gemini       launch=https://gemini.google.com/app window=Gemini      click=botto
 UI targets open/focus the app, click near the bottom, paste, then press Enter by default.
 
 CLI targets run the command directly with the prompt as one argument.
+
+## Retry And History
+
+Every job stores attempts and history in the queue file. Failures stay visible in `list` and `show`.
+
+```powershell
+python promptqueue.py add --max-attempts 8 --retry-base 60 23:30 claude retry this more patiently
+python promptqueue.py list --all
+python promptqueue.py show JOB_ID
+```
+
+Backoff is exponential and capped at one hour.
 
 ## Commands
 
@@ -83,8 +96,10 @@ Options:
 --command-template TEMPLATE    Run a custom command; use {prompt}.
 --delay SECONDS                Wait before paste/submit. Default: 5.
 --file FILE                    Read prompt text from a UTF-8 file.
+--max-attempts N               Attempts before marking failed. Default: 5.
 --no-submit                    Paste only; do not press Enter.
 --pre-keys KEYS                Windows SendKeys before paste, e.g. "{ESC}".
+--retry-base SECONDS           Initial retry delay. Default: 30.
 --stdin                        Read prompt text from stdin.
 --window TITLE                 Focus a window whose title contains TITLE.
 ```
@@ -151,7 +166,7 @@ python promptqueue.py targets
 
 ### `run`
 
-Run the queue worker.
+Run the legacy queue worker. This is best for CLI targets and window-paste targets.
 
 ```powershell
 python promptqueue.py run

@@ -23,6 +23,7 @@ TARGETS = {
     "claude": "https://claude.ai/new",
     "claude-code": "claude",
     "chatgpt": "https://chatgpt.com/",
+    "copilot": "https://copilot.microsoft.com/",
     "gemini": "https://gemini.google.com/app",
     "cursor": "cursor",
     "antigravity": "agy",
@@ -32,6 +33,7 @@ TARGETS = {
 WINDOW_HINTS = {
     "claude": "Claude",
     "chatgpt": "ChatGPT",
+    "copilot": "Copilot",
     "gemini": "Gemini",
     "cursor": "Cursor",
     "antigravity": "Antigravity",
@@ -44,6 +46,8 @@ COMMAND_TARGETS = {
     "claude-code": "claude -p {prompt}",
     "codex-exec": "codex exec {prompt}",
 }
+
+MAX_HISTORY = 25
 
 
 def echo(text: str) -> None:
@@ -72,6 +76,71 @@ def load_queue(path: Path = QUEUE_FILE) -> dict:
 def save_queue(queue: dict, path: Path = QUEUE_FILE) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(queue, indent=2), encoding="utf-8")
+
+
+def iso_now(now: datetime | None = None) -> str:
+    return (now or datetime.now()).isoformat(timespec="seconds")
+
+
+def parse_iso(value: str | None) -> datetime | None:
+    return datetime.fromisoformat(value) if value else None
+
+
+def append_history(job: dict, event: str, now: datetime | None = None, **fields) -> None:
+    entry = {"at": iso_now(now), "event": event, **fields}
+    job["history"] = [*job.get("history", [])[-(MAX_HISTORY - 1) :], entry]
+
+
+def job_ready(job: dict, now: datetime | None = None) -> bool:
+    now = now or datetime.now()
+    if job.get("sent_at") or job.get("failed_at"):
+        return False
+    if parse_when(job["at"], now) > now:
+        return False
+    if (parse_iso(job.get("next_attempt_at")) or now) > now:
+        return False
+    if (parse_iso(job.get("leased_until")) or now) > now:
+        return False
+    return True
+
+
+def mark_sent(job: dict, now: datetime | None = None) -> None:
+    now = now or datetime.now()
+    job["sent_at"] = iso_now(now)
+    job.pop("last_error", None)
+    job.pop("next_attempt_at", None)
+    job.pop("leased_until", None)
+    append_history(job, "sent", now, attempt=job.get("attempts", 0))
+
+
+def mark_failed(job: dict, error: str, now: datetime | None = None) -> None:
+    now = now or datetime.now()
+    attempts = int(job.get("attempts", 0)) + 1
+    max_attempts = int(job.get("max_attempts", 5))
+    retry_base = float(job.get("retry_base", 30))
+    retry_delay = min(retry_base * (2 ** (attempts - 1)), 3600)
+
+    job["attempts"] = attempts
+    job["last_error"] = error
+    job.pop("leased_until", None)
+    append_history(job, "failed", now, attempt=attempts, error=error)
+
+    if attempts >= max_attempts:
+        job["failed_at"] = iso_now(now)
+        job.pop("next_attempt_at", None)
+        return
+
+    job["next_attempt_at"] = iso_now(now + timedelta(seconds=retry_delay))
+
+
+def job_status(job: dict) -> str:
+    if job.get("sent_at"):
+        return "sent"
+    if job.get("failed_at"):
+        return "failed"
+    if job.get("next_attempt_at"):
+        return "retry"
+    return "queued"
 
 
 def copy_clipboard(text: str) -> None:
@@ -118,7 +187,7 @@ def command_args(template: str, prompt: str) -> list[str]:
 
 
 def run_command_template(template: str, prompt: str) -> None:
-    subprocess.Popen(command_args(template, prompt))
+    subprocess.run(command_args(template, prompt), check=True)
 
 
 def visible_windows() -> list[tuple[int, int, str]]:
@@ -262,18 +331,17 @@ def run_due(
     changed = False
 
     for job in queue["jobs"]:
-        if job.get("sent_at") or parse_when(job["at"], now) > now:
+        if not job_ready(job, now=now):
             continue
 
         try:
             send(job)
         except Exception as exc:
-            job["last_error"] = str(exc)
+            mark_failed(job, str(exc), now)
             changed = True
             print(f"failed {job['id']} -> {job['target']}: {exc}")
         else:
-            job["sent_at"] = now.isoformat(timespec="seconds")
-            job.pop("last_error", None)
+            mark_sent(job, now)
             sent += 1
             changed = True
             print(f"sent {job['id']} -> {job['target']}")
@@ -307,6 +375,9 @@ def add_job(args: argparse.Namespace) -> None:
         "prompt": prompt,
         "delay": args.delay,
         "submit": not args.no_submit,
+        "attempts": 0,
+        "max_attempts": args.max_attempts,
+        "retry_base": args.retry_base,
         "window": args.window,
         "click": args.click,
         "pre_keys": args.pre_keys,
@@ -324,10 +395,12 @@ def list_jobs(args: argparse.Namespace) -> None:
     for job in sorted(jobs, key=lambda item: item["at"]):
         if job.get("sent_at") and not args.all:
             continue
-        status = "sent" if job.get("sent_at") else "queued"
+        status = job_status(job)
         preview = job["prompt"].replace("\n", " ")[:70]
+        attempts = f"  attempts={job.get('attempts', 0)}/{job.get('max_attempts', 5)}"
+        next_try = f"  next={job['next_attempt_at']}" if job.get("next_attempt_at") else ""
         error = f"  error={job['last_error']}" if job.get("last_error") else ""
-        rows.append(f"{job['id']}  {job['at']}  {status:6}  {job['target']}  {preview}{error}")
+        rows.append(f"{job['id']}  {job['at']}  {status:6}  {job['target']}  {preview}{attempts}{next_try}{error}")
         if args.full:
             rows.append(job["prompt"])
 
@@ -401,6 +474,9 @@ def selftest() -> None:
         failed = load_queue(path)["jobs"][0]
         assert failed["last_error"] == "boom"
         assert "sent_at" not in failed
+        assert failed["attempts"] == 1
+        assert failed["next_attempt_at"]
+        assert failed["history"][-1]["event"] == "failed"
 
     events = []
     originals = copy_clipboard, launch_target, paste_into_active_window
@@ -440,12 +516,14 @@ def build_parser() -> argparse.ArgumentParser:
     add.add_argument("--command-template", help='Run a command instead of UI paste. Use {prompt}, e.g. "claude -p {prompt}".')
     add.add_argument("--delay", type=float, default=5, help="Seconds to wait before paste/submit.")
     add.add_argument("--file", help="Read the prompt from a UTF-8 text file.")
+    add.add_argument("--max-attempts", type=int, default=5, help="Attempts before marking the job failed. Default: 5.")
     add.add_argument("--no-submit", action="store_true", help="Paste only; do not press Enter.")
     add.add_argument("--pre-keys", help='Windows SendKeys string to send before paste, e.g. "{ESC}".')
+    add.add_argument("--retry-base", type=float, default=30, help="Initial retry delay in seconds. Default: 30.")
     add.add_argument("--stdin", action="store_true", help="Read the prompt from stdin.")
     add.add_argument("--window", help='Window title substring to focus before paste, like "Codex" or "Claude".')
     add.add_argument("when", help='Local time, like "23:30" or "2026-06-24 01:15".')
-    add.add_argument("target", help="copy, claude, chatgpt, gemini, cursor, codex, URL, or command.")
+    add.add_argument("target", help="copy, claude, chatgpt, copilot, gemini, cursor, codex, URL, or command.")
     add.add_argument("prompt", nargs=argparse.REMAINDER)
     add.set_defaults(func=add_job)
 
