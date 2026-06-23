@@ -30,9 +30,10 @@ If you change scheduling, retries, command parsing, target detection, clipboard 
 1. Update `version` in `pyproject.toml`.
 2. Run `python -m build` and `python -m twine check dist/*`.
 3. Push to `main` and wait for CI.
-4. Publish a GitHub release like `v0.1.0`.
+4. Upload with `python -m twine upload dist/*`.
+5. Publish a GitHub release like `v0.1.0`.
 
-The `Publish` workflow uploads to PyPI when PyPI Trusted Publishing is configured for this repo.
+The `Publish` workflow can upload to PyPI manually after PyPI Trusted Publishing is configured for this repo.
 
 ## Good First Contributions
 
