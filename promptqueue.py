@@ -5,6 +5,7 @@ import json
 import os
 import platform
 import re
+import shutil
 import shlex
 import subprocess
 import sys
@@ -27,7 +28,7 @@ TARGETS = {
     "gemini": "https://gemini.google.com/app",
     "cursor": "cursor",
     "antigravity": "agy",
-    "codex": "codex app",
+    "codex": "app:OpenAI.Codex_2p2nqsd0c76g0!App",
 }
 
 WINDOW_HINTS = {
@@ -143,11 +144,7 @@ def job_status(job: dict) -> str:
     return "queued"
 
 
-def copy_clipboard(text: str) -> None:
-    if platform.system() == "Windows":
-        subprocess.run(["clip"], input=text, text=True, check=True)
-        return
-
+def tkinter_copy_clipboard(text: str) -> None:
     import tkinter as tk
 
     root = tk.Tk()
@@ -158,6 +155,57 @@ def copy_clipboard(text: str) -> None:
     root.destroy()
 
 
+def copy_clipboard(text: str, runner=subprocess.run, fallback=tkinter_copy_clipboard) -> None:
+    if platform.system() == "Windows":
+        try:
+            runner(["clip"], input=text, text=True, check=True, capture_output=True)
+            return
+        except subprocess.CalledProcessError as exc:
+            error = (exc.stderr or exc.stdout or str(exc)).strip()
+            raise RuntimeError(f"clipboard unavailable: {error}") from exc
+        except OSError as exc:
+            raise RuntimeError(f"clipboard unavailable: {exc}") from exc
+
+    fallback(text)
+
+
+def split_command(command: str) -> list[str]:
+    return shlex.split(command, posix=platform.system() != "Windows")
+
+
+def protected_windowsapps_path(path: str, system=platform.system) -> bool:
+    normalized = path.replace("/", "\\").lower()
+    return system() == "Windows" and "\\program files\\windowsapps\\" in normalized
+
+
+def command_issue(args: list[str], which=shutil.which) -> str | None:
+    if not args:
+        return "command required"
+    path = which(args[0])
+    if not path:
+        return f"command not found: {args[0]}"
+    if protected_windowsapps_path(path):
+        return f"command not runnable: {args[0]} (protected WindowsApps package)"
+    return None
+
+
+def launch_status(launch: str, which=shutil.which) -> str:
+    if launch in {"copy", "clipboard", "none"}:
+        return "internal"
+    if launch.startswith(("http://", "https://")):
+        return "url"
+    if launch.startswith("app:"):
+        return "app"
+    issue = command_issue(split_command(launch.replace("{prompt}", "prompt")), which)
+    if issue and "not runnable" in issue:
+        return "blocked"
+    return "missing" if issue else "found"
+
+
+def raise_command_error(action: str, command: str, exc: BaseException) -> None:
+    raise RuntimeError(f"{action} not runnable: {command} ({exc})") from exc
+
+
 def launch_target(target: str) -> None:
     target = TARGETS.get(target, target)
     if target in {"copy", "clipboard", "none"}:
@@ -165,7 +213,23 @@ def launch_target(target: str) -> None:
     if target.startswith(("http://", "https://")):
         webbrowser.open(target)
         return
-    subprocess.Popen(target, shell=True)
+    if target.startswith("app:"):
+        if platform.system() != "Windows":
+            raise RuntimeError("Windows app launch is Windows-only")
+        subprocess.Popen(["explorer.exe", f"shell:AppsFolder\\{target[4:]}"])
+        return
+
+    issue = command_issue(split_command(target))
+    if issue:
+        raise RuntimeError(issue)
+    try:
+        process = subprocess.Popen(target, shell=True, stderr=subprocess.PIPE, text=True)
+    except PermissionError as exc:
+        raise_command_error("launcher", split_command(target)[0], exc)
+    time.sleep(0.25)
+    if process.poll() not in (None, 0):
+        error = process.stderr.read().strip() if process.stderr else ""
+        raise RuntimeError(f"launcher failed: {target}{': ' + error if error else ''}")
 
 
 def command_args(template: str, prompt: str) -> list[str]:
@@ -186,8 +250,15 @@ def command_args(template: str, prompt: str) -> list[str]:
     return [prompt if clean(part) == marker else clean(part) for part in parts]
 
 
-def run_command_template(template: str, prompt: str) -> None:
-    subprocess.run(command_args(template, prompt), check=True)
+def run_command_template(template: str, prompt: str, runner=subprocess.run, which=shutil.which) -> None:
+    args = command_args(template, prompt)
+    issue = command_issue(args, which)
+    if issue:
+        raise RuntimeError(issue)
+    try:
+        runner(args, check=True)
+    except PermissionError as exc:
+        raise_command_error("command", args[0], exc)
 
 
 def visible_windows() -> list[tuple[int, int, str]]:
@@ -354,7 +425,7 @@ def run_due(
 def read_prompt(args: argparse.Namespace) -> str:
     parts = []
     if args.file:
-        parts.append(Path(args.file).read_text(encoding="utf-8"))
+        parts.append(Path(args.file).read_text(encoding="utf-8-sig"))
     if args.stdin:
         parts.append(sys.stdin.read())
     if args.prompt:
@@ -434,7 +505,7 @@ def list_targets(_args: argparse.Namespace) -> None:
         launch = COMMAND_TARGETS.get(name) or TARGETS.get(name)
         window = WINDOW_HINTS.get(name, "")
         click = CLICK_HINTS.get(name, "")
-        rows.append(f"{name:12} launch={launch} window={window} click={click}")
+        rows.append(f"{name:12} launch={launch} window={window} click={click} status={launch_status(launch)}")
     echo("\n".join(rows))
 
 
@@ -454,9 +525,50 @@ def selftest() -> None:
     assert parse_when("2026-01-02 03:04") == datetime(2026, 1, 2, 3, 4)
     assert command_args("tool {prompt}", "hello world") == ["tool", "hello world"]
     assert command_args("tool", "hi") == ["tool", "hi"]
+    assert launch_status("copy", which=lambda _name: None) == "internal"
+    assert launch_status("https://example.com/", which=lambda _name: None) == "url"
+    assert launch_status("app:Example.App!App", which=lambda _name: None) == "app"
+    assert launch_status("missing --flag", which=lambda _name: None) == "missing"
+    assert launch_status("tool --flag", which=lambda name: f"C:/bin/{name}") == "found"
+    assert command_issue(["missing"], which=lambda _name: None) == "command not found: missing"
+    assert command_issue(["tool"], which=lambda name: f"C:/bin/{name}") is None
+    protected_path = "C:/Program Files/WindowsApps/Vendor.App_1.0.0_x64__abc/app/resources/tool.exe"
+    assert protected_windowsapps_path(protected_path, system=lambda: "Windows")
+    assert command_issue(["tool"], which=lambda _name: protected_path) == (
+        "command not runnable: tool (protected WindowsApps package)"
+    )
+    assert launch_status("tool --flag", which=lambda _name: protected_path) == "blocked"
+    try:
+        run_command_template(
+            "tool {prompt}",
+            "hi",
+            runner=lambda *_args, **_kwargs: (_ for _ in ()).throw(PermissionError("locked")),
+            which=lambda name: f"C:/bin/{name}",
+        )
+    except RuntimeError as exc:
+        assert "command not runnable: tool" in str(exc)
+    else:
+        raise AssertionError("PermissionError should become a useful RuntimeError")
+    try:
+        copy_clipboard(
+            "hi",
+            runner=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                subprocess.CalledProcessError(1, ["clip"], stderr="denied")
+            ),
+            fallback=lambda _text: (_ for _ in ()).throw(AssertionError("no Windows fallback")),
+        )
+    except RuntimeError as exc:
+        assert "clipboard unavailable" in str(exc)
+    else:
+        raise AssertionError("failed Windows clipboard writes should not be marked sent")
 
     with tempfile.TemporaryDirectory() as temp_dir:
         path = Path(temp_dir) / "queue.json"
+        prompt_path = Path(temp_dir) / "prompt.txt"
+        prompt_path.write_text("from file", encoding="utf-8-sig")
+        prompt_args = argparse.Namespace(file=str(prompt_path), stdin=False, prompt=[])
+        assert read_prompt(prompt_args) == "from file"
+
         save_queue(
             {"jobs": [{"id": "abc", "at": "2026-01-01T09:00:00", "target": "copy", "prompt": "hi"}]},
             path,

@@ -1,0 +1,8 @@
+---
+description: Schedule AI prompts through Promptqueue when users mention limits resetting or ask to send/paste prompts later.
+alwaysApply: true
+---
+
+Follow `AGENTS.md` for Promptqueue scheduling.
+
+When no target is named and the user is talking to Cursor, use `cursor`.
