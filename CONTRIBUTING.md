@@ -25,6 +25,15 @@ python -m twine check dist/*
 
 If you change scheduling, retries, command parsing, target detection, clipboard behavior, or GUI paste behavior, add the smallest selftest assertion that would fail without your fix.
 
+## Releasing
+
+1. Update `version` in `pyproject.toml`.
+2. Run `python -m build` and `python -m twine check dist/*`.
+3. Push to `main` and wait for CI.
+4. Publish a GitHub release like `v0.1.0`.
+
+The `Publish` workflow uploads to PyPI when PyPI Trusted Publishing is configured for this repo.
+
 ## Good First Contributions
 
 - Add or improve a target alias.

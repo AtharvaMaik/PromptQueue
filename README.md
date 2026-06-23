@@ -302,4 +302,8 @@ The best contributions are small and practical: a better target alias, a failing
 
 MIT. See [LICENSE](LICENSE).
 
+## Package
+
+PyPI package name: [`promptqueue`](https://pypi.org/project/promptqueue/).
+
 Star the repo if it saves you from waiting around for an AI limit reset. That is the whole point.
