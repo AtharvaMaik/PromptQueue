@@ -1,4 +1,4 @@
-# Promptqueue
+# PromptQueue
 
 Use these project instructions for scheduling prompts:
 

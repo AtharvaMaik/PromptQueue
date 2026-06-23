@@ -1,10 +1,10 @@
-# Promptqueue
+# PromptQueue
 
 Schedule AI prompts for the moment your limits reset.
 
-Promptqueue is a tiny, dependency-free prompt scheduler for Claude, Codex, ChatGPT, Gemini, Copilot, Cursor, Antigravity, and anything else you can launch from your machine.
+PromptQueue is a tiny, dependency-free prompt scheduler for Claude, Codex, ChatGPT, Gemini, Copilot, Cursor, Antigravity, and anything else you can launch from your machine.
 
-When an AI tool says "try again at 7:30 PM", do not keep the tab open, set a reminder, or paste the same prompt later. Queue it now. Promptqueue waits, opens or focuses the target app, pastes the prompt, and submits it when the time arrives.
+When an AI tool says "try again at 7:30 PM", do not keep the tab open, set a reminder, or paste the same prompt later. Queue it now. PromptQueue waits, opens or focuses the target app, pastes the prompt, and submits it when the time arrives.
 
 ```powershell
 python promptqueue.py add 19:30 claude finish the migration plan
@@ -17,7 +17,7 @@ One Python file. Standard library only. No accounts, no server, no private APIs.
 
 AI rate limits waste the worst kind of time: attention.
 
-You already know what you want to ask next. The only problem is the clock. Promptqueue turns "come back later" into a queued job you can trust.
+You already know what you want to ask next. The only problem is the clock. PromptQueue turns "come back later" into a queued job you can trust.
 
 Use it when:
 
@@ -106,7 +106,13 @@ My limits reset at 7:30 pm. Schedule this prompt for Claude:
 "Continue the refactor and run the tests."
 ```
 
-The agent should queue it with Promptqueue instead of making you remember.
+The agent should queue it with PromptQueue instead of making you remember.
+
+## Requirements
+
+- Python 3.10+
+- Windows for GUI paste/submit automation
+- macOS/Linux work for queue management, URLs, clipboard fallback, and CLI targets, but GUI paste currently uses Windows APIs
 
 ## Install
 
@@ -118,7 +124,7 @@ cd PromptQueue
 python promptqueue.py selftest
 ```
 
-Promptqueue stores jobs in:
+PromptQueue stores jobs in:
 
 ```text
 %USERPROFILE%\.promptqueue.json
@@ -134,7 +140,7 @@ $env:PROMPTQUEUE_FILE="C:\path\queue.json"
 
 1. `add` writes a job to the local queue file.
 2. `run` checks for due jobs.
-3. When a job is due, Promptqueue copies the prompt to the clipboard.
+3. When a job is due, PromptQueue copies the prompt to the clipboard.
 4. For UI targets, it opens or focuses the app, clicks the composer, pastes, and optionally submits.
 5. For CLI targets, it launches the command directly.
 6. Attempts, failures, retries, and history stay visible in the queue file.
@@ -266,8 +272,14 @@ Backoff is exponential and capped at one hour.
 
 ## Notes
 
-Promptqueue intentionally does the boring thing: it uses local files, the clipboard, app launching, and keyboard paste. That keeps it portable and inspectable.
+PromptQueue intentionally does the boring thing: it uses local files, the clipboard, app launching, and keyboard paste. That keeps it portable and inspectable.
 
 For GUI apps, it does not use private app APIs. If one app misses the composer, adjust `--window`, `--click`, `--delay`, or `--pre-keys`.
+
+## Contributing
+
+Issues and PRs are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
+
+The best contributions are small and practical: a better target alias, a failing selftest for a real bug, clearer setup docs, or a platform-specific paste improvement.
 
 Star the repo if it saves you from waiting around for an AI limit reset. That is the whole point.

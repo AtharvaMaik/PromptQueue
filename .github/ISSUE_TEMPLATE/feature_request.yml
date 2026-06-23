@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest a small improvement or target.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What time-wasting workflow would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should PromptQueue do?
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: Target app or CLI
+      placeholder: Claude, Codex, Cursor, Antigravity, etc.
+  - type: textarea
+    id: extra
+    attributes:
+      label: Extra context
+      description: Links, commands, or screenshots that help explain the request.

@@ -1,4 +1,4 @@
-# Promptqueue Agent Instructions
+# PromptQueue Agent Instructions
 
 Use this repo to schedule prompts for later delivery through `promptqueue.py`.
 
