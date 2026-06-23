@@ -23,3 +23,12 @@ jobs:
         run: python -m py_compile promptqueue.py
       - name: Selftest
         run: python promptqueue.py selftest
+      - name: Install package
+        run: python -m pip install .
+      - name: Console selftest
+        run: promptqueue selftest
+      - name: Build package
+        run: |
+          python -m pip install build twine
+          python -m build
+          python -m twine check dist/*

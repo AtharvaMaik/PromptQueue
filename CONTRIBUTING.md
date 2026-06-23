@@ -19,6 +19,8 @@ Run:
 ```powershell
 python -m py_compile promptqueue.py
 python promptqueue.py selftest
+python -m build
+python -m twine check dist/*
 ```
 
 If you change scheduling, retries, command parsing, target detection, clipboard behavior, or GUI paste behavior, add the smallest selftest assertion that would fail without your fix.

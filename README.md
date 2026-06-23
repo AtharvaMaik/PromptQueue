@@ -3,6 +3,7 @@
 [![CI](https://github.com/AtharvaMaik/PromptQueue/actions/workflows/ci.yml/badge.svg)](https://github.com/AtharvaMaik/PromptQueue/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![PyPI](https://img.shields.io/pypi/v/promptqueue.svg)](https://pypi.org/project/promptqueue/)
 
 Schedule AI prompts for the moment your limits reset.
 
@@ -11,13 +12,13 @@ PromptQueue is a tiny, dependency-free prompt scheduler for Claude, Codex, ChatG
 When an AI tool says "try again at 7:30 PM", do not keep the tab open, set a reminder, or paste the same prompt later. Queue it now. PromptQueue waits, opens or focuses the target app, pastes the prompt, and submits it when the time arrives.
 
 ```powershell
-python promptqueue.py add 19:30 claude finish the migration plan
-python promptqueue.py run
+promptqueue add 19:30 claude finish the migration plan
+promptqueue run
 ```
 
 One Python file. Standard library only. No accounts, no server, no private APIs.
 
-![PromptQueue terminal demo](docs/demo.svg)
+![PromptQueue terminal demo](https://raw.githubusercontent.com/AtharvaMaik/PromptQueue/main/docs/demo.svg)
 
 ## Why This Exists
 
@@ -39,15 +40,15 @@ If this saves you one context switch, it has already done its job.
 Queue a Claude prompt for 11:30 PM:
 
 ```powershell
-python promptqueue.py add 23:30 claude write a first draft of the launch email
-python promptqueue.py run
+promptqueue add 23:30 claude write a first draft of the launch email
+promptqueue run
 ```
 
 Queue a Codex CLI prompt:
 
 ```powershell
-python promptqueue.py add 23:30 codex-exec add tests for the queue runner
-python promptqueue.py run
+promptqueue add 23:30 codex-exec add tests for the queue runner
+promptqueue run
 ```
 
 Queue a multiline prompt safely:
@@ -57,15 +58,15 @@ Queue a multiline prompt safely:
 Review this repo.
 Find the smallest useful next improvement.
 Then implement it.
-'@ | python promptqueue.py add --stdin 23:30 claude
-python promptqueue.py run
+'@ | promptqueue add --stdin 23:30 claude
+promptqueue run
 ```
 
 View what is waiting:
 
 ```powershell
-python promptqueue.py list --full
-python promptqueue.py show JOB_ID
+promptqueue list --full
+promptqueue show JOB_ID
 ```
 
 ## Supported Targets
@@ -86,7 +87,7 @@ gemini       Gemini web UI
 Run this to see the built-in aliases on your machine:
 
 ```powershell
-python promptqueue.py targets
+promptqueue targets
 ```
 
 UI targets open or focus the app, click near the composer, paste, then press Enter by default.
@@ -122,13 +123,22 @@ The agent should queue it with PromptQueue instead of making you remember.
 
 ## Install
 
-Clone the repo and run the single Python file:
+Install from PyPI:
+
+```powershell
+pip install promptqueue
+promptqueue selftest
+```
+
+Or clone the repo and run the single Python file:
 
 ```powershell
 git clone https://github.com/AtharvaMaik/PromptQueue.git
 cd PromptQueue
 python promptqueue.py selftest
 ```
+
+After `pip install`, use `promptqueue`. When running from a clone without installing, use `python promptqueue.py`.
 
 PromptQueue stores jobs in:
 
@@ -160,7 +170,7 @@ If the machine wakes up after the scheduled time, `run` catches overdue jobs.
 Queue a prompt.
 
 ```powershell
-python promptqueue.py add [options] WHEN TARGET PROMPT...
+promptqueue add [options] WHEN TARGET PROMPT...
 ```
 
 `WHEN` can be a local time like `23:30` or an ISO-ish datetime like `2026-06-24 01:15`.
@@ -184,12 +194,12 @@ Options:
 Examples:
 
 ```powershell
-python promptqueue.py add 23:30 claude summarize this paper
-python promptqueue.py add --window Codex 23:30 copy this lands in Codex
-python promptqueue.py add --no-submit 23:30 claude paste this but do not send it
-python promptqueue.py add --file prompt.txt 23:30 claude
-"prompt from stdin" | python promptqueue.py add --stdin 23:30 copy
-python promptqueue.py add --command-template "claude -p {prompt}" 23:30 command review this repo
+promptqueue add 23:30 claude summarize this paper
+promptqueue add --window Codex 23:30 copy this lands in Codex
+promptqueue add --no-submit 23:30 claude paste this but do not send it
+promptqueue add --file prompt.txt 23:30 claude
+"prompt from stdin" | promptqueue add --stdin 23:30 copy
+promptqueue add --command-template "claude -p {prompt}" 23:30 command review this repo
 ```
 
 ### `run`
@@ -197,19 +207,19 @@ python promptqueue.py add --command-template "claude -p {prompt}" 23:30 command 
 Start the queue worker:
 
 ```powershell
-python promptqueue.py run
+promptqueue run
 ```
 
 Check once and exit:
 
 ```powershell
-python promptqueue.py run --once
+promptqueue run --once
 ```
 
 Poll faster or slower:
 
 ```powershell
-python promptqueue.py run --poll 5
+promptqueue run --poll 5
 ```
 
 The runner must be alive when jobs are due.
@@ -219,9 +229,9 @@ The runner must be alive when jobs are due.
 Show queued jobs:
 
 ```powershell
-python promptqueue.py list
-python promptqueue.py list --all
-python promptqueue.py list --full
+promptqueue list
+promptqueue list --all
+promptqueue list --full
 ```
 
 ### `show`
@@ -229,7 +239,7 @@ python promptqueue.py list --full
 Show one job as JSON:
 
 ```powershell
-python promptqueue.py show JOB_ID
+promptqueue show JOB_ID
 ```
 
 ### `remove`
@@ -237,7 +247,7 @@ python promptqueue.py show JOB_ID
 Delete one job:
 
 ```powershell
-python promptqueue.py remove JOB_ID
+promptqueue remove JOB_ID
 ```
 
 ### `windows`
@@ -245,7 +255,7 @@ python promptqueue.py remove JOB_ID
 List visible Windows window titles. Use this to find the right `--window` value.
 
 ```powershell
-python promptqueue.py windows
+promptqueue windows
 ```
 
 ### `targets`
@@ -253,7 +263,7 @@ python promptqueue.py windows
 List built-in target aliases:
 
 ```powershell
-python promptqueue.py targets
+promptqueue targets
 ```
 
 ### `selftest`
@@ -261,7 +271,7 @@ python promptqueue.py targets
 Run the built-in smoke test:
 
 ```powershell
-python promptqueue.py selftest
+promptqueue selftest
 ```
 
 ## Retries And History
@@ -269,9 +279,9 @@ python promptqueue.py selftest
 Every job stores attempts and history. Failures stay visible in `list` and `show`.
 
 ```powershell
-python promptqueue.py add --max-attempts 8 --retry-base 60 23:30 claude retry this more patiently
-python promptqueue.py list --all
-python promptqueue.py show JOB_ID
+promptqueue add --max-attempts 8 --retry-base 60 23:30 claude retry this more patiently
+promptqueue list --all
+promptqueue show JOB_ID
 ```
 
 Backoff is exponential and capped at one hour.

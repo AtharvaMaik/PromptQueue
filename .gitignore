@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 .promptqueue.json
+build/
+dist/
+*.egg-info/
